@@ -1,0 +1,33 @@
+﻿version: '3.8'
+services:
+  db:
+    image: postgis/postgis:14-3.3
+    environment:
+      POSTGRES_USER: fert_user
+      POSTGRES_PASSWORD: fert_pass
+      POSTGRES_DB: fertdss
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn backend_skeleton:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - DATABASE_URL=postgresql://fert_user:fert_pass@db:5432/fertdss
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    depends_on:
+      - db
+      - redis
+volumes:
+  db_data:

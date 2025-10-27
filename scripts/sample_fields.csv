@@ -1,0 +1,4 @@
+﻿name,lat,lon,area_ha,soil_type,default_crop
+Field_A,19.2,73.1,1.8,Loam,maize
+Field_B,18.9,73.0,2.3,Clay,wheat
+Field_C,19.0,73.2,1.5,SandyLoam,rice

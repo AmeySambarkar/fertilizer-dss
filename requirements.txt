@@ -1,0 +1,10 @@
+﻿fastapi
+uvicorn[standard]
+psycopg2-binary
+pandas
+sqlalchemy
+python-dotenv
+xgboost
+scikit-learn
+joblib
+redis
