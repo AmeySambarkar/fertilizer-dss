@@ -52,4 +52,4 @@ Transparency & Auditability: A core value is transparency. All models are docume
 
 In summary, this project is breaking new ground by tightly integrating systems thinking with robust ML and optimization. The roadmap from data foundation → MVP → probabilistic DSS → piloting ensures it is strategically doable and delivers early wins, while the focus on Pareto‐optimal trade-offs and continuous learning makes the system visionary and impactful.
 
-References: The above scope and plan are drawn from the project’s technical documentation and synopsis. These sources detail the objectives, methodology, and phased roadmap for the fertilizer optimization DSS.
+
