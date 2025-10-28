@@ -1,0 +1,20 @@
+﻿# Your original requirements
+scikit-learn
+xgboost
+pandas
+numpy
+psycopg2-binary
+scipy
+pulp
+shap
+geopandas
+mlflow
+python-dotenv
+sqlalchemy  # <-- ADDED for your featurize_field function
+
+# New requirements for the Async App
+fastapi
+uvicorn[standard]
+python-multipart
+celery
+redis

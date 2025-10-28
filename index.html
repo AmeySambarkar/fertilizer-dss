@@ -1,0 +1,298 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fertilizer DSS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { width: 100%; overflow-x: auto; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-3xl">
+        
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Fertilizer DSS</h1>
+            <p class="text-lg text-gray-600">Probabilistic Recommendation Engine</p>
+        </header>
+
+        <!-- Input Form -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Get Recommendation</h2>
+            <form id="recommend-form">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="field_id" class="block text-sm font-medium text-gray-700">Field ID</label>
+                        <input type="text" id="field_id" name="field_id" value="field_1" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="crop" class="block text-sm font-medium text-gray-700">Crop</label>
+                        <input type="text" id="crop" name="crop" value="wheat" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="budget" class="block text-sm font-medium text-gray-700">Budget (INR)</label>
+                        <input type="number" id="budget" name="budget" value="10000" min="0" step="500" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <button type="submit" id="submit-btn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+                        <span id="btn-text">Get Recommendation</span>
+                        <svg id="btn-loader" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- "What-if" Scenario Button -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Scenario Analysis (Pareto Frontier)</h2>
+            <p class="text-gray-600 mb-4">
+                Run the model for multiple budgets to see the trade-offs 
+                between cost, yield, and risk.
+            </p>
+            <button id="scenario-btn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50">
+                <span id="scenario-btn-text">Run Scenario Analysis</span>
+                <svg id="scenario-loader" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+Z                </svg>
+            </button>
+            
+            <div id="scenario-chart-container" class="mt-6 hidden">
+                <h3 class="text-xl font-semibold mb-2">Yield vs. Budget Frontier</h3>
+                <div class="chart-container">
+                    <svg id="pareto-chart" width="600" height="300"></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status/Results Section -->
+        <div id="results-container" class="bg-white p-6 rounded-lg shadow-md hidden">
+            <div id="status-message" class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded relative mb-4 hidden" role="alert">
+                <strong class="font-bold">Status:</strong>
+                <span class="block sm:inline" id="status-text"></span>
+            </div>
+            
+            <div id="error-message" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 hidden" role="alert">
+                <strong class="font-bold">Error:</strong>
+                <span class="block sm:inline" id="error-text"></span>
+            </div>
+            
+            <div id="success-content" class="hidden">
+                <h2 class="text-2xl font-semibold mb-4">Recommendation Results</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
+                    <div class="bg-gray-50 p-4 rounded-lg"><span class="block text-sm font-medium text-gray-500">Nitrogen (N)</span><span id="rec-n" class="text-2xl font-bold text-blue-600">--</span></div>
+                    <div class="bg-gray-50 p-4 rounded-lg"><span class="block text-sm font-medium text-gray-500">Phosphorus (P)</span><span id="rec-p" class="text-2xl font-bold text-blue-600">--</span></div>
+                    <div class="bg-gray-50 p-4 rounded-lg"><span class="block text-sm font-medium text-gray-500">Potassium (K)</span><span id="rec-k" class="text-2xl font-bold text-blue-600">--</span></div>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200"><span class="block text-sm font-medium text-gray-500">Mean Yield</span><span id="rec-yield" class="text-2xl font-bold text-blue-800">--</span></div>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Expected Yield Distribution (95% CI)</h3>
+                <p class="text-sm text-gray-600 mb-4">This chart shows the range of likely yield outcomes based on simulated risk.</p>
+                <div class="chart-container">
+                    <svg id="yield-chart" width="600" height="120"></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('recommend-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnLoader = document.getElementById('btn-loader');
+        const resultsContainer = document.getElementById('results-container');
+        const statusContainer = document.getElementById('status-message');
+        const statusText = document.getElementById('status-text');
+        const errorContainer = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const successContent = document.getElementById('success-content');
+        const recN = document.getElementById('rec-n');
+        const recP = document.getElementById('rec-p');
+        const recK = document.getElementById('rec-k');
+        const recYield = document.getElementById('rec-yield');
+        const chartSvg = d3.select("#yield-chart");
+        const scenarioBtn = document.getElementById('scenario-btn');
+        const scenarioBtnText = document.getElementById('scenario-btn-text');
+        const scenarioLoader = document.getElementById('scenario-loader');
+        const scenarioChartContainer = document.getElementById('scenario-chart-container');
+        const paretoSvg = d3.select("#pareto-chart");
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fieldId = document.getElementById('field_id').value;
+            const crop = document.getElementById('crop').value; // <-- ADDED
+            const budget = parseFloat(document.getElementById('budget').value);
+            setLoading(true, "Submitting job...");
+            resultsContainer.classList.remove('hidden');
+            successContent.classList.add('hidden');
+            errorContainer.classList.add('hidden');
+            statusContainer.classList.add('hidden');
+            try {
+                const response = await fetch('/recommend/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        field_id: fieldId,
+                        budget: budget,
+                        crop: crop // <-- ADDED
+                    }),
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Failed to submit job.');
+                showStatus(Job  submitted. Waiting for worker...);
+                pollJobStatus(data.job_id, true);
+            } catch (error) {
+                showError(error.message);
+                setLoading(false, "Get Recommendation");
+            }
+        });
+
+        async function pollJobStatus(jobId, updateSingle) {
+            try {
+                const response = await fetch(/recommend/result/);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Error fetching job status.');
+                if (data.status === 'SUCCESS') {
+                    if(updateSingle) {
+                        setLoading(false, "Get Recommendation");
+                        statusContainer.classList.add('hidden');
+                        updateUI(data.data);
+                    }
+                } else if (data.status === 'FAILED') {
+                    if(updateSingle) {
+                        setLoading(false, "Get Recommendation");
+                        statusContainer.classList.add('hidden');
+                        showError(Job failed: );
+                    }
+                } else {
+                    if(updateSingle) showStatus(Job is running (Status: )... checking again in 2s.);
+                    setTimeout(() => pollJobStatus(jobId, updateSingle), 2000);
+                }
+            } catch (error) {
+                if(updateSingle) {
+                    showError(error.message);
+                    setLoading(false, "Get Recommendation");
+                }
+            }
+        }
+
+        function setLoading(isLoading, message) {
+            btnText.textContent = message;
+            submitBtn.disabled = isLoading;
+            isLoading ? btnLoader.classList.remove('hidden') : btnLoader.classList.add('hidden');
+        }
+        function showStatus(message) {
+            statusText.textContent = message;
+            statusContainer.classList.remove('hidden');
+        }
+        function showError(message) {
+            errorText.textContent = message;
+            errorContainer.classList.remove('hidden');
+            successContent.classList.add('hidden');
+            statusContainer.classList.add('hidden');
+        }
+        function updateUI(data) {
+            recN.textContent = data.recommended_N.toFixed(1);
+            recP.textContent = data.recommended_P.toFixed(1);
+            recK.textContent = data.recommended_K.toFixed(1);
+            recYield.textContent = data.expected_yield_mean.toFixed(1);
+            resultsContainer.classList.remove('hidden');
+            successContent.classList.remove('hidden');
+            errorContainer.classList.add('hidden');
+            statusContainer.classList.add('hidden');
+            drawYieldChart(data.expected_yield_95_ci_low, data.expected_yield_mean, data.expected_yield_95_ci_high);
+        }
+        function drawYieldChart(low, mean, high) {
+            chartSvg.selectAll("*").remove();
+            const margin = { top: 20, right: 30, bottom: 50, left: 30 };
+            const width = 600 - margin.left - margin.right;
+            const height = 120 - margin.top - margin.bottom;
+            const g = chartSvg.append("g").attr("transform", 	ranslate(,));
+            const min = low * 0.9; const max = high * 1.1;
+            const x = d3.scaleLinear().domain([min, max]).range([0, width]);
+            g.append("g").attr("transform", 	ranslate(0, )).call(d3.axisBottom(x).ticks(5)).selectAll("text").style("font-size", "12px");
+            g.append("text").attr("text-anchor", "middle").attr("x", width / 2).attr("y", height + 40).text("Expected Yield").style("font-size", "14px").style("fill", "#4A5568");
+            const chartCenterY = height / 2 - 10;
+            g.append("rect").attr("x", x(low)).attr("y", chartCenterY - 10).attr("width", x(high) - x(low)).attr("height", 20).attr("fill", "#C3DAFE");
+            g.append("line").attr("x1", x(mean)).attr("y1", chartCenterY - 20).attr("x2", x(mean)).attr("y2", chartCenterY + 20).attr("stroke", "#2563EB").attr("stroke-width", 3);
+            g.append("text").attr("x", x(mean)).attr("y", chartCenterY - 25).attr("text-anchor", "middle").text(Mean: ).style("font-size", "12px").style("font-weight", "bold").style("fill", "#2563EB");
+        }
+
+        scenarioBtn.addEventListener('click', runScenarioAnalysis);
+        async function runScenarioAnalysis() {
+            setScenarioLoading(true);
+            const fieldId = document.getElementById('field_id').value;
+            const crop = document.getElementById('crop').value; // <-- ADDED
+            const budgets = [5000, 7500, 10000, 12500, 15000, 17500, 20000];
+            let jobPromises = [];
+            showStatus(Submitting  jobs in parallel...);
+            for (const budget of budgets) {
+                const jobPromise = fetch('/recommend/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        field_id: fieldId, 
+                        budget: budget,
+                        crop: crop // <-- ADDED
+                    })
+                }).then(res => res.json());
+                jobPromises.push(jobPromise);
+            }
+            const jobResponses = await Promise.all(jobPromises);
+            showStatus(Waiting for  jobs to complete...);
+            let pollPromises = jobResponses.map(job => pollForResult(job.job_id));
+            const results = await Promise.all(pollPromises);
+            showStatus(All  jobs complete. Drawing chart.);
+            scenarioChartContainer.classList.remove('hidden');
+            drawParetoChart(results.map(res => res.data));
+            setScenarioLoading(false);
+            updateUI(results[results.length - 1].data);
+        }
+
+        function pollForResult(jobId) {
+            return new Promise((resolve, reject) => {
+                const poll = async () => {
+                    try {
+                        const res = await fetch(/recommend/result/);
+                        const data = await res.json();
+                        if (data.status === 'SUCCESS') resolve(data);
+                        else if (data.status === 'FAILED') reject(new Error(data.data));
+                        else setTimeout(poll, 2500);
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                poll();
+            });
+        }
+        function setScenarioLoading(isLoading) {
+            scenarioBtn.disabled = isLoading;
+            scenarioBtnText.textContent = isLoading ? "Running Scenarios..." : "Run Scenario Analysis";
+            isLoading ? scenarioLoader.classList.remove('hidden') : scenarioLoader.classList.add('hidden');
+        }
+        function drawParetoChart(results) {
+            paretoSvg.selectAll("*").remove();
+            const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+            const width = 600 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+            const g = paretoSvg.append("g").attr("transform", 	ranslate(,));
+            const x = d3.scaleLinear().domain([0, d3.max(results, d => d.budget) * 1.1]).range([0, width]);
+            g.append("g").attr("transform", 	ranslate(0, )).call(d3.axisBottom(x).ticks(5)).selectAll("text").style("font-size", "12px");
+            g.append("text").attr("text-anchor", "middle").attr("x", width / 2).attr("y", height + 40).text("Budget (INR)");
+            const y = d3.scaleLinear().domain([0, d3.max(results, d => d.expected_yield_95_ci_high) * 1.1]).range([height, 0]);
+            g.append("g").call(d3.axisLeft(y).ticks(5)).selectAll("text").style("font-size", "12px");
+            g.append("text").attr("text-anchor", "middle").attr("transform", "rotate(-90)").attr("y", -margin.left + 20).attr("x", -height / 2).text("Expected Yield (kg/ha)");
+            g.selectAll("error-bar").data(results).enter().append("line").attr("stroke", "gray").attr("stroke-width", 1.5).attr("x1", d => x(d.budget)).attr("y1", d => y(d.expected_yield_95_ci_low)).attr("x2", d => x(d.budget)).attr("y2", d => y(d.expected_yield_95_ci_high));
+            g.selectAll("dot").data(results).enter().append("circle").attr("cx", d => x(d.budget)).attr("cy", d => y(d.expected_yield_mean)).attr("r", 5).style("fill", "#2563EB");
+        }
+    </script>
+</body>
+</html>
