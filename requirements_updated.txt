@@ -10,7 +10,9 @@ shap
 geopandas
 mlflow
 python-dotenv
-sqlalchemy  # <-- ADDED for your featurize_field function
+sqlalchemy
+geoalchemy2
+Faker
 
 # New requirements for the Async App
 fastapi

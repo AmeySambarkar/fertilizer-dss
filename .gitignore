@@ -1,0 +1,19 @@
+﻿# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.venv/
+
+# Secrets file
+.env
+
+# Large data folder
+dataa/
+
+# Docker persistent data
+postgres_data/
+
+# VS Code settings
+.vscode/
